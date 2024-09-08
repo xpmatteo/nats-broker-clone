@@ -36,12 +36,23 @@ func serve(conn net.Conn) {
 	defer conn.Close()
 	buf := make([]byte, maxPayload)
 	for {
-		err := interact(conn, buf)
+		err := printInfo(conn, buf)
+		if err != nil {
+			fmt.Println("Error from connection:", err)
+			break
+		}
+
+		err = interact(conn, buf)
 		if err != nil {
 			fmt.Println("Error from connection:", err)
 			break
 		}
 	}
+}
+
+func printInfo(conn io.Writer, buf []byte) error {
+	_, err := conn.Write([]byte("INFO {}\r\n"))
+	return err
 }
 
 // interact handles a single interaction on a connection
