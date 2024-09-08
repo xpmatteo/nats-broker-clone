@@ -7,16 +7,16 @@ import (
 )
 
 func main() {
-	listener, err := net.Listen("tcp", ":"+"4444")
+	const port = "4444"
+	listener, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		fmt.Println("Error starting server:", err)
 		os.Exit(1)
 	}
 	defer listener.Close()
 
-	fmt.Println("Server is listening on port 8080...")
+	fmt.Println("Server is listening on port " + port)
 
-	// Accept incoming connections
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -24,13 +24,16 @@ func main() {
 			continue
 		}
 
-		// Send the string "HELLO\r\n" to the client
-		_, err = conn.Write([]byte("HELLO\r\n"))
-		if err != nil {
-			fmt.Println("Error writing to connection:", err)
-		}
-
-		// Close the connection
-		conn.Close()
+		go serve(conn)
 	}
+}
+
+func serve(conn net.Conn) {
+	_, err := conn.Write([]byte("HELLO\r\n"))
+	if err != nil {
+		fmt.Println("Error writing to connection:", err)
+	}
+
+	// Close the connection
+	_ = conn.Close()
 }
