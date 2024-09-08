@@ -5,7 +5,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -26,34 +25,35 @@ func main() {
 			continue
 		}
 
-		go func() {
-			defer conn.Close()
-			serve(conn)
-		}()
+		go serve(conn)
 	}
 }
 
-func serve(conn io.ReadWriter) {
-	buf := make([]byte, 10)
+const maxPayload = 100
+
+// serve handles a single connection
+func serve(conn net.Conn) {
+	defer conn.Close()
+	buf := make([]byte, maxPayload)
 	for {
-		nr, err := conn.Read(buf)
+		err := interact(conn, buf)
 		if err != nil {
-			fmt.Println("Error reading from connection:", err)
-			return
-		}
-
-		command := strings.TrimSpace(string(buf[:nr]))
-		response := interact(command)
-
-		_, err = conn.Write([]byte(response + "\r\n"))
-		if err != nil {
-			fmt.Println("Error writing to connection:", err)
-			return
+			fmt.Println("Error from connection:", err)
+			break
 		}
 	}
 }
 
-func interact(command string) string {
-	response := command
-	return response
+// interact handles a single interaction on a connection
+func interact(conn io.ReadWriter, buf []byte) error {
+	_, err := conn.Read(buf)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Write(buf)
+	if err != nil {
+		return err
+	}
+	return nil
 }
