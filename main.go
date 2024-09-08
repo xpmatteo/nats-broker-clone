@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -34,23 +35,25 @@ func main() {
 
 func serve(conn io.ReadWriter) {
 	buf := make([]byte, 10)
-	nr, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println("Error reading from connection:", err)
-		return
-	}
-	logBuffer(buf, nr)
+	for {
+		nr, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println("Error reading from connection:", err)
+			return
+		}
 
-	_, err = conn.Write(buf)
-	if err != nil {
-		fmt.Println("Error writing to connection:", err)
+		command := strings.TrimSpace(string(buf[:nr]))
+		response := interact(command)
+
+		_, err = conn.Write([]byte(response + "\r\n"))
+		if err != nil {
+			fmt.Println("Error writing to connection:", err)
+			return
+		}
 	}
 }
 
-// logBuffer prints the characters in buf one by one
-func logBuffer(buf []byte, nr int) {
-	for i := range nr {
-		ch := buf[i]
-		fmt.Printf("%02X: %c\n", ch, ch)
-	}
+func interact(command string) string {
+	response := command
+	return response
 }
