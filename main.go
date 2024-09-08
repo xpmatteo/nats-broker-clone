@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 )
@@ -24,16 +25,32 @@ func main() {
 			continue
 		}
 
-		go serve(conn)
+		go func() {
+			defer conn.Close()
+			serve(conn)
+		}()
 	}
 }
 
-func serve(conn net.Conn) {
-	_, err := conn.Write([]byte("HELLO\r\n"))
+func serve(conn io.ReadWriter) {
+	buf := make([]byte, 10)
+	nr, err := conn.Read(buf)
+	if err != nil {
+		fmt.Println("Error reading from connection:", err)
+		return
+	}
+	logBuffer(buf, nr)
+
+	_, err = conn.Write(buf)
 	if err != nil {
 		fmt.Println("Error writing to connection:", err)
 	}
+}
 
-	// Close the connection
-	_ = conn.Close()
+// logBuffer prints the characters in buf one by one
+func logBuffer(buf []byte, nr int) {
+	for i := range nr {
+		ch := buf[i]
+		fmt.Printf("%02X: %c\n", ch, ch)
+	}
 }
