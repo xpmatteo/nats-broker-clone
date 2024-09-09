@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"testing"
 )
 
@@ -62,4 +63,47 @@ func Test_printInfo_starts_with_info_declaration(t *testing.T) {
 	expected := "INFO {}\r\n"
 	assert.NoError(t, err)
 	assert.Equal(t, []byte(expected), writer.buf)
+}
+
+func Test_expectConnection(t *testing.T) {
+	tests := []struct {
+		name           string
+		readWriter     io.ReadWriter
+		expectedError  error
+		expectedOutput string
+	}{
+		{"ok", send("CONNECT {}\r\n"), nil, "+OK\r\n"},
+		//{"bad syntax", "FOO\r\n"},
+		//{"timeout", ""},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := expectConnection(test.readWriter)
+
+			if test.expectedError == nil && err != nil {
+				assert.NoError(t, err)
+				return
+			}
+			if test.expectedError != nil && err == nil {
+				assert.ErrorIs(t, err, test.expectedError)
+				return
+			}
+			expect(t, test.readWriter, test.expectedOutput)
+		})
+	}
+}
+
+func expect(t *testing.T, rw io.ReadWriter, expectedOutput string) {
+	buf := make([]byte, maxPayload)
+
+	n, err := rw.Read(buf)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(expectedOutput), buf[:n])
+}
+
+func send(input string) io.ReadWriter {
+	rw := &bufReadWriter{}
+	_, _ = rw.Write([]byte(input))
+	return rw
 }

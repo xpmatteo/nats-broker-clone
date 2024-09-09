@@ -55,6 +55,16 @@ func printInfo(conn io.Writer, buf []byte) error {
 	return err
 }
 
+func expectConnection(rw io.ReadWriter) error {
+	buf := make([]byte, maxPayload)
+	_, err := rw.Read(buf)
+	if err != nil {
+		return err
+	}
+	_, err = rw.Write([]byte("+OK\r\n"))
+	return err
+}
+
 // interact handles a single interaction on a connection
 func interact(conn io.ReadWriter, buf []byte) error {
 	_, err := conn.Read(buf)
